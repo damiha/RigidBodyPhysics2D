@@ -238,7 +238,7 @@ public class World {
 
                         // we only care about the z component for these two vectors (others are empty anyway)
                         Vector3 rAxN = Vector3.cross(rA, contactNormal);
-                        Vector3 rBxN = Vector3.cross(rB, contactPoint);
+                        Vector3 rBxN = Vector3.cross(rB, contactNormal);
 
                         double leftHandSide = r1.inverseMass + r2.inverseMass +
                                 ((rAxN.z * rAxN.z) * r1.inverseMomentOfInertia) + ((rBxN.z * rBxN.z) * r2.inverseMomentOfInertia);
@@ -267,7 +267,7 @@ public class World {
                         // the friction impulse
                         // |F_R| = mu * |F_n|
                         // |J_r| = mu * |J_n|
-                        double frictionCoefficient = 0.5;
+                        double frictionCoefficient = 0.1;
                         double impulseMagnitudeFrictionImpulse = frictionCoefficient * impulseMagnitude / contactPoints.size();
 
                         // relative velocity (needs velocities at the points)
@@ -332,6 +332,10 @@ public class World {
                 gc.setStroke(rectangle.color);
                 gc.strokeRect(-rectangleWidth / 2, -rectangleHeight / 2, rectangleWidth, rectangleHeight);
             }
+
+            gc.setStroke(Color.rgb(0, 0, 0));
+            gc.strokeLine(0, 0, rectangleWidth / 2, 0);
+
             gc.restore();
 
             // draw contact normals
@@ -370,12 +374,16 @@ public class World {
 
             if(displayMode == DisplayMode.SOLID) {
                 gc.setFill(circle.color);
-                gc.fillOval(-circleRadius, -circleRadius, circleRadius, circleRadius);
+                gc.fillOval(-circleRadius, -circleRadius, 2 * circleRadius, 2 * circleRadius);
             }
             else if(displayMode == DisplayMode.WIREFRAME){
                 gc.setStroke(circle.color);
-                gc.strokeOval(-circleRadius, -circleRadius, circleRadius, circleRadius);
+                gc.strokeOval(-circleRadius, -circleRadius, 2 * circleRadius, 2 * circleRadius);
             }
+
+            gc.setStroke(Color.rgb(0, 0, 0));
+            gc.strokeLine(0, 0, circleRadius, 0);
+
             gc.restore();
         }
     }

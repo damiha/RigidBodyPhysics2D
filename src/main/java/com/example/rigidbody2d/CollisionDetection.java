@@ -3,6 +3,7 @@ package com.example.rigidbody2d;
 import kotlin.NotImplementedError;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class CollisionDetection {
@@ -96,7 +97,22 @@ public class CollisionDetection {
             }
 
         }
+        else if(r1 instanceof Rectangle rect && r2 instanceof Circle circle){
+
+            // contact normal points from circle to rect
+            return getContactPoints(rect, circle, contactNormal);
+        }
+        else if(r1 instanceof Circle circle && r2 instanceof Rectangle rect){
+
+            // contact normal points from rect to circle
+            return getContactPoints(rect, circle, Vector3.mul(-1, contactNormal));
+        }
+
         throw new NotImplementedError();
+    }
+
+    public static ArrayList<Vector3> getContactPoints(Rectangle rect, Circle circle, Vector3 contactNormal){
+        return new ArrayList<>(List.of(Vector3.add(circle.position, Vector3.mul(circle.radius, contactNormal))));
     }
 
     public static Vector3 projectPointOntoLine(Vector3 vStart, Vector3 vEnd, Vector3 p){
@@ -168,7 +184,56 @@ public class CollisionDetection {
             return new Pair<>(axisLeastOverlap, leastOverlap);
         }
 
+        else if(r1 instanceof Rectangle rect && r2 instanceof Circle circle){
+
+            // collision normal points from circle to rect
+            return isColliding(rect, circle);
+        }
+        else if(r1 instanceof Circle circle && r2 instanceof Rectangle rect){
+
+            // collision normal should point from rect to circle!
+            Pair<Vector3, Double> result = isColliding(rect, circle);
+
+            if(result.key() != null){
+                return new Pair<>(Vector3.mul(-1, result.key()), result.value());
+            }
+
+            return result;
+        }
+
         return new Pair<>(null, null);
+    }
+
+    public static Pair<Vector3, Double> isColliding(Rectangle rect, Circle circle){
+
+        ArrayList<Vector3> vertices = rect.getVertices();
+
+        int n = vertices.size();
+
+        double minDepth = Double.MAX_VALUE;
+        Vector3 collisionNormal = null;
+
+        for(int i = 0; i < n; i++){
+
+            Vector3 vStart = vertices.get(i);
+            Vector3 vEnd = vertices.get((i + 1) % n);
+
+            Vector3 projectCircleCenter = projectPointOntoLine(vStart, vEnd, circle.position);
+
+            double distanceToLine = Vector3.sub(projectCircleCenter, circle.position).norm();
+            double penetrationDepth = Math.abs(circle.radius - distanceToLine);
+
+            if(distanceToLine < circle.radius && penetrationDepth < minDepth){
+
+                minDepth = penetrationDepth;
+
+                // points to the inside of the circle
+                collisionNormal = Vector3.sub(projectCircleCenter, circle.position);
+                collisionNormal.normalize();
+            }
+        }
+
+        return new Pair<>(collisionNormal, minDepth);
     }
 
     public static Pair<Double, Double> projectOntoAxis(Vector3 axis, ArrayList<Vector3> polygon){
