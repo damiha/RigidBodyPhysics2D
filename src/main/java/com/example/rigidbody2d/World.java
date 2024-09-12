@@ -2,8 +2,11 @@ package com.example.rigidbody2d;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 public class World {
@@ -25,6 +28,9 @@ public class World {
 
     boolean isPhysicsActive = false;
 
+    boolean drawOrientationBoxes = true;
+    boolean drawOrientationCircles = true;
+
     // acceleration due to gravity
     double g = -1;
 
@@ -44,6 +50,25 @@ public class World {
         rigidBodies.add(rigidBody);
     }
 
+    public void drawStringsTopLeft(List<String> strings) {
+        // Set the font style
+        Font font = Font.font("Arial", FontWeight.NORMAL, 14);
+        gc.setFont(font);
+
+        // Set the text color to black
+        gc.setFill(Color.BLACK);
+
+        // Starting position for the first line of text
+        double x = 10;
+        double y = 20;
+
+        // Draw each string in the array list
+        for (String str : strings) {
+            gc.fillText(str, x, y);
+            y += 20; // Move down for the next line
+        }
+    }
+
     public void draw(){
         for(RigidBody rigidBody : rigidBodies){
             draw(rigidBody);
@@ -57,13 +82,14 @@ public class World {
 
                     for(Vector3 vertex : vertices){
                         Vector3 vertexOnScreen = toScreenCoords(vertex);
-                        gc.fillOval(vertexOnScreen.x, vertexOnScreen.y, 5, 5);
+                        gc.setFill(Color.rgb(50, 50, 50));
+                        gc.fillOval(vertexOnScreen.x - 5, vertexOnScreen.y - 5, 10, 10);
                     }
                 }
             }
         }
 
-        if(drawContactPoints){
+        if(drawContactPoints && displayMode == DisplayMode.WIREFRAME){
 
             gc.save();
             gc.setFill(Color.rgb(245, 150, 65)); // orange
@@ -71,7 +97,7 @@ public class World {
             for(Vector3 contactPoint : allContactPoints){
                 Vector3 contactPointOnScreen = toScreenCoords(contactPoint);
 
-                gc.fillOval(contactPointOnScreen.x, contactPointOnScreen.y, 10, 10);
+                gc.fillOval(contactPointOnScreen.x - 5, contactPointOnScreen.y - 5, 10, 10);
             }
 
             gc.restore();
@@ -81,6 +107,14 @@ public class World {
             Vector3 mouseOnScreen = toScreenCoords(mousePosInWorldCoords);
             gc.fillOval(mouseOnScreen.x, mouseOnScreen.y, 5, 5);
         }
+
+        drawStringsTopLeft(List.of(
+                "R (+ Shift) - Rotate Anticlockwise/Clockwise",
+                "E (+ Shift) - Increase/Decrease Width",
+                "T (+ Shift) - Increase/Decrease Height",
+                "Space - Start/Stop the Simulation",
+                "Wireframe [1] / Solid [2] / Textured [3]",
+                "New Cube [X] / New Circle [C] / Static vs. Dynamic [S]"));
     }
 
     private Vector3 toScreenCoords(Vector3 position){
@@ -105,6 +139,14 @@ public class World {
 
     public void togglePhysics(){
         isPhysicsActive = !isPhysicsActive;
+    }
+
+    public void spawnCubeAtMousePosition(){
+        rigidBodies.add(new Rectangle(mousePosInWorldCoords.x, mousePosInWorldCoords.y, 1.0, 1.0, 0, false));
+    }
+
+    public void spawnCircleAtMousePosition(){
+        rigidBodies.add(new Circle(mousePosInWorldCoords.x, mousePosInWorldCoords.y, 0.5, false));
     }
 
     public void update(double dt, double mouseX, double mouseY,  boolean mousePressed,
@@ -190,6 +232,10 @@ public class World {
 
                     RigidBody r1 = rigidBodies.get(i);
                     RigidBody r2 = rigidBodies.get(j);
+
+                    if(r1.isStatic && r2.isStatic){
+                        continue;
+                    }
 
                     Pair<Vector3, Double> result = CollisionDetection.isColliding(r1, r2);
                     Vector3 contactNormal = result.key();
@@ -318,6 +364,8 @@ public class World {
             double rectangleHeight = toScreenCoords(rectangle.height);
 
             gc.save();
+            gc.setLineWidth(5.0);
+
             gc.translate(rectangleCenter.x, rectangleCenter.y);
 
             // mathematical direction of rotation = counterclockwise
@@ -325,16 +373,18 @@ public class World {
             gc.rotate(-toDegrees(rectangle.angle));
 
             if(displayMode == DisplayMode.SOLID) {
-                gc.setFill(rectangle.color);
+                gc.setFill(rectangle.getColor());
                 gc.fillRect(-rectangleWidth / 2, -rectangleHeight / 2, rectangleWidth, rectangleHeight);
             }
             else if(displayMode == DisplayMode.WIREFRAME){
-                gc.setStroke(rectangle.color);
+                gc.setStroke(rectangle.getColor());
                 gc.strokeRect(-rectangleWidth / 2, -rectangleHeight / 2, rectangleWidth, rectangleHeight);
             }
 
-            gc.setStroke(Color.rgb(0, 0, 0));
-            gc.strokeLine(0, 0, rectangleWidth / 2, 0);
+            if(drawOrientationBoxes  && displayMode == DisplayMode.WIREFRAME) {
+                gc.setStroke(Color.rgb(50, 50, 50));
+                gc.strokeLine(0, 0, rectangleWidth / 2, 0);
+            }
 
             gc.restore();
 
@@ -366,6 +416,8 @@ public class World {
             double circleRadius = toScreenCoords(circle.radius);
 
             gc.save();
+            gc.setLineWidth(5.0);
+
             gc.translate(circleCenter.x, circleCenter.y);
 
             // mathematical direction of rotation = counterclockwise
@@ -373,16 +425,18 @@ public class World {
             gc.rotate(-toDegrees(circle.angle));
 
             if(displayMode == DisplayMode.SOLID) {
-                gc.setFill(circle.color);
+                gc.setFill(circle.getColor());
                 gc.fillOval(-circleRadius, -circleRadius, 2 * circleRadius, 2 * circleRadius);
             }
             else if(displayMode == DisplayMode.WIREFRAME){
-                gc.setStroke(circle.color);
+                gc.setStroke(circle.getColor());
                 gc.strokeOval(-circleRadius, -circleRadius, 2 * circleRadius, 2 * circleRadius);
             }
 
-            gc.setStroke(Color.rgb(0, 0, 0));
-            gc.strokeLine(0, 0, circleRadius, 0);
+            if(drawOrientationCircles) {
+                gc.setStroke(Color.rgb(50, 50, 50));
+                gc.strokeLine(0, 0, circleRadius, 0);
+            }
 
             gc.restore();
         }

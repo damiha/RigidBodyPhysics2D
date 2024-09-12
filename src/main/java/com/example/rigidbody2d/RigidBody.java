@@ -1,5 +1,7 @@
 package com.example.rigidbody2d;
 
+import javafx.scene.paint.Color;
+
 public abstract class RigidBody {
 
     Vector3 position;
@@ -26,5 +28,9 @@ public abstract class RigidBody {
         velocity = new Vector3();
         acceleration = new Vector3();
         angularVelocity = 0;
+    }
+
+    public Color getColor(){
+        return isStatic ? Color.rgb(167, 199, 231) : Color.rgb(255, 179, 186);
     }
 }

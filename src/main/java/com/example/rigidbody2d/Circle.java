@@ -8,14 +8,12 @@ public class Circle extends RigidBody{
 
     static final double DENSITY = 1.0;
     double radius;
-    Color color;
 
-    public Circle(double centerX, double centerY, double radius, boolean isStatic, Color color) {
+    public Circle(double centerX, double centerY, double radius, boolean isStatic) {
 
         super(centerX, centerY, 0, 0.0, 0.0, isStatic);
 
         this.radius = radius;
-        this.color = color;
 
         updatePhysicalProperties();
     }

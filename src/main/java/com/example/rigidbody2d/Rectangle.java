@@ -8,20 +8,18 @@ import java.util.ArrayList;
 public class Rectangle extends RigidBody{
 
     double width, height;
-    Color color;
     boolean isStatic;
 
     static final double DENSITY = 1.0;
 
     ArrayList<Vector3> vertices;
 
-    public Rectangle(double centerX, double centerY, double width, double height, double angle, boolean isStatic, Color color) {
+    public Rectangle(double centerX, double centerY, double width, double height, double angle, boolean isStatic) {
 
         super(centerX, centerY, angle, 0.0, 0.0, isStatic);
 
         this.width = width;
         this.height = height;
-        this.color = color;
         this.isStatic = isStatic;
 
         updatePhysicalProperties();
