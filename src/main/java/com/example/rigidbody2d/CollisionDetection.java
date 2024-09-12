@@ -27,6 +27,13 @@ public class CollisionDetection {
         return true;
     }
 
+    public static boolean isIntersecting(Circle circle, Vector3 point){
+
+        double d = Vector3.sub(circle.position, point).norm();
+
+        return d <= circle.radius;
+    }
+
     public static Pair<ArrayList<Vector3>, Double> getContactPointsDirected(Rectangle r1, Rectangle r2, Vector3 contactNormal){
 
         ArrayList<Vector3> vertices1 = r1.getVertices();

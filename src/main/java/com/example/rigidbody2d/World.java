@@ -141,6 +141,29 @@ public class World {
                         }
                     }
                }
+               else if(rigidBody instanceof Circle circle){
+
+                    if(CollisionDetection.isIntersecting(circle, mousePosInWorldCoords)){
+
+                        Vector3 dx = lastMousePosInWorldCoords != null ?
+                                Vector3.sub(mousePosInWorldCoords, lastMousePosInWorldCoords) :
+                                new Vector3(0, 0, 0);
+
+                        circle.position = Vector3.add(circle.position, dx);
+
+                        if(RPressed){
+                            circle.angle += (ShiftPressed ? -0.01 : 0.01);
+                        }
+
+                        if(EPressed){
+                            circle.setRadius(circle.radius + (ShiftPressed ? -0.01 : 0.01));
+                        }
+
+                        if(TPressed){
+                            circle.setRadius(circle.radius + (ShiftPressed ? -0.01 : 0.01));
+                        }
+                    }
+               }
             }
         }
 
@@ -332,6 +355,28 @@ public class World {
                     gc.strokeLine(midPointOnScreen.x, midPointOnScreen.y, endPointOnScreen.x, endPointOnScreen.y);
                 }
             }
+        }
+        else if(rigidBody instanceof Circle circle){
+
+            Vector3 circleCenter = toScreenCoords(circle.position);
+            double circleRadius = toScreenCoords(circle.radius);
+
+            gc.save();
+            gc.translate(circleCenter.x, circleCenter.y);
+
+            // mathematical direction of rotation = counterclockwise
+            // javafx is clockwise by default
+            gc.rotate(-toDegrees(circle.angle));
+
+            if(displayMode == DisplayMode.SOLID) {
+                gc.setFill(circle.color);
+                gc.fillOval(-circleRadius, -circleRadius, circleRadius, circleRadius);
+            }
+            else if(displayMode == DisplayMode.WIREFRAME){
+                gc.setStroke(circle.color);
+                gc.strokeOval(-circleRadius, -circleRadius, circleRadius, circleRadius);
+            }
+            gc.restore();
         }
     }
 }

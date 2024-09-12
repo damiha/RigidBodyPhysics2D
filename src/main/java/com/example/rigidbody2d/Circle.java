@@ -1,4 +1,32 @@
 package com.example.rigidbody2d;
 
-public class Circle {
+import java.util.ArrayList;
+import javafx.scene.paint.Color;
+
+
+public class Circle extends RigidBody{
+
+    static final double DENSITY = 1.0;
+    double radius;
+    Color color;
+
+    public Circle(double centerX, double centerY, double radius, boolean isStatic, Color color) {
+
+        super(centerX, centerY, 0, 0.0, 0.0, isStatic);
+
+        this.radius = radius;
+        this.color = color;
+
+        updatePhysicalProperties();
+    }
+    private void updatePhysicalProperties(){
+        double mass = Math.PI * radius * radius * DENSITY;
+        inverseMass = isStatic ? 0.0 : (1.0 / mass);
+        inverseMomentOfInertia = isStatic ? 0.0 : (2.0 / (mass * radius * radius));
+    }
+
+    public void setRadius(double newRadius){
+        this.radius = newRadius;
+        updatePhysicalProperties();
+    }
 }
