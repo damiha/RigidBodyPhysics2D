@@ -155,6 +155,7 @@ public class World {
             for (RigidBody rigidBody : rigidBodies) {
 
                 if(!rigidBody.isStatic){
+                    rigidBody.angle += (dt * rigidBody.angularVelocity);
                     rigidBody.velocity = Vector3.add(rigidBody.velocity, Vector3.mul(dt, rigidBody.acceleration));
                     rigidBody.position = Vector3.add(rigidBody.position, Vector3.mul(dt, rigidBody.velocity));
                 }
@@ -200,6 +201,49 @@ public class World {
                     // now calculate the contact points and do the dynamic collision response
                     ArrayList<Vector3> contactPoints = CollisionDetection.getContactPoints(r1, r2, contactNormal);
                     allContactPoints.addAll(contactPoints);
+
+                    Vector3 r1AdditionalVelocity = new Vector3();
+                    Vector3 r2AdditionalVelocity = new Vector3();
+
+                    double r1AdditionalAngularVelocity = 0;
+                    double r2AdditionalAngularVelocity = 0;
+
+                    for(Vector3 contactPoint : contactPoints){
+
+                        Vector3 rA = Vector3.sub(contactPoint, r1.position);
+                        Vector3 rB = Vector3.sub(contactPoint, r2.position);
+
+                        // we only care about the z component for these two vectors (others are empty anyway)
+                        Vector3 rAxN = Vector3.cross(rA, contactNormal);
+                        Vector3 rBxN = Vector3.cross(rB, contactPoint);
+
+                        double leftHandSide = r1.inverseMass + r2.inverseMass +
+                                ((rAxN.z * rAxN.z) * r1.inverseMomentOfInertia) + ((rBxN.z * rBxN.z) * r2.inverseMomentOfInertia);
+
+                        // coefficient of restitution
+                        double C = 1;
+                        double rightHandSide = (-1 - C) * (
+                                Vector3.dot(r1.velocity, contactNormal) - Vector3.dot(r2.velocity, contactNormal) +
+                                r1.angularVelocity * rAxN.z - r2.angularVelocity * rBxN.z);
+
+                        double impulseMagnitude = rightHandSide / leftHandSide;
+
+                        Vector3 normalImpulse = Vector3.mul(impulseMagnitude, contactNormal);
+
+                        // J / m = v
+                        r1AdditionalVelocity.add(Vector3.mul(r1.inverseMass, normalImpulse));
+                        // apply impulse in opposite direction
+                        r2AdditionalVelocity.add(Vector3.mul(-r2.inverseMass, normalImpulse));
+
+                        r1AdditionalAngularVelocity += (impulseMagnitude * r1.inverseMomentOfInertia * rAxN.z);
+                        r2AdditionalAngularVelocity -= (impulseMagnitude * r2.inverseMomentOfInertia * rBxN.z);
+                    }
+
+                    r1.velocity.add(r1AdditionalVelocity);
+                    r2.velocity.add(r2AdditionalVelocity);
+
+                    r1.angularVelocity += r1AdditionalAngularVelocity;
+                    r2.angularVelocity += r2AdditionalAngularVelocity;
                 }
             }
         }

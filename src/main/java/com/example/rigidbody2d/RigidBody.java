@@ -7,6 +7,8 @@ public abstract class RigidBody {
     Vector3 acceleration;
 
     double angle;
+    double angularVelocity;
+
     double inverseMass;
     double inverseMomentOfInertia;
     boolean isStatic;
@@ -23,5 +25,6 @@ public abstract class RigidBody {
 
         velocity = new Vector3();
         acceleration = new Vector3();
+        angularVelocity = 0;
     }
 }

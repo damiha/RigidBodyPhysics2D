@@ -35,6 +35,14 @@ public class Vector3 {
         return new Vector3(v.x + w.x, v.y + w.y, v.z + w.z);
     }
 
+    public static Vector3 cross(Vector3 v, Vector3 w) {
+        double crossX = v.y * w.z - v.z * w.y;
+        double crossY = v.z * w.x - v.x * w.z;
+        double crossZ = v.x * w.y - v.y * w.x;
+
+        return new Vector3(crossX, crossY, crossZ);
+    }
+
     public static Vector3 sub(Vector3 v, Vector3 w){
         return new Vector3(v.x - w.x, v.y - w.y, v.z - w.z);
     }
