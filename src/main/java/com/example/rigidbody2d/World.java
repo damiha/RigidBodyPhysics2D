@@ -221,12 +221,15 @@ public class World {
                                 ((rAxN.z * rAxN.z) * r1.inverseMomentOfInertia) + ((rBxN.z * rBxN.z) * r2.inverseMomentOfInertia);
 
                         // coefficient of restitution
-                        double C = 1;
+                        double C = 0.2;
                         double rightHandSide = (-1 - C) * (
                                 Vector3.dot(r1.velocity, contactNormal) - Vector3.dot(r2.velocity, contactNormal) +
                                 r1.angularVelocity * rAxN.z - r2.angularVelocity * rBxN.z);
 
                         double impulseMagnitude = rightHandSide / leftHandSide;
+
+                        // the impulse should be distributed between the contact points
+                        impulseMagnitude /= contactPoints.size();
 
                         Vector3 normalImpulse = Vector3.mul(impulseMagnitude, contactNormal);
 
@@ -237,6 +240,39 @@ public class World {
 
                         r1AdditionalAngularVelocity += (impulseMagnitude * r1.inverseMomentOfInertia * rAxN.z);
                         r2AdditionalAngularVelocity -= (impulseMagnitude * r2.inverseMomentOfInertia * rBxN.z);
+
+                        // the friction impulse
+                        // |F_R| = mu * |F_n|
+                        // |J_r| = mu * |J_n|
+                        double frictionCoefficient = 0.5;
+                        double impulseMagnitudeFrictionImpulse = frictionCoefficient * impulseMagnitude / contactPoints.size();
+
+                        // relative velocity (needs velocities at the points)
+                        Vector3 vA = Vector3.add(r1.velocity, Vector3.cross(new Vector3(0, 0, r1.angularVelocity), rA));
+                        Vector3 vB = Vector3.add(r2.velocity, Vector3.cross(new Vector3(0, 0, r2.angularVelocity), rB));
+
+                        Vector3 relativeVelocity = Vector3.sub(vA, vB);
+                        Vector3 tangentialDirection = Vector3.sub(relativeVelocity,
+                                Vector3.mul(Vector3.dot(relativeVelocity, contactNormal), contactNormal));
+
+                        if(Utils.isClose(0, tangentialDirection.norm())){
+                            continue;
+                        }
+
+                        tangentialDirection.normalize();
+
+                        // acts in the direction of A
+                        Vector3 frictionImpulse = Vector3.mul(-impulseMagnitudeFrictionImpulse, tangentialDirection);
+
+                        r1AdditionalVelocity.add(Vector3.mul(r1.inverseMass, frictionImpulse));
+                        // apply impulse in opposite direction
+                        r2AdditionalVelocity.add(Vector3.mul(-r2.inverseMass, frictionImpulse));
+
+                        double rAxFrictionImpulse = Vector3.cross(rA, frictionImpulse).z;
+                        double rBxFrictionImpulse = Vector3.cross(rB, frictionImpulse).z;
+
+                        r1AdditionalAngularVelocity += (r1.inverseMomentOfInertia * rAxFrictionImpulse);
+                        r2AdditionalAngularVelocity -= (r2.inverseMomentOfInertia * rBxFrictionImpulse);
                     }
 
                     r1.velocity.add(r1AdditionalVelocity);

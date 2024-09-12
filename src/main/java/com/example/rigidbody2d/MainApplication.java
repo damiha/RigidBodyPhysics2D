@@ -44,7 +44,11 @@ public class MainApplication extends Application {
         world = new World(WIDTH, HEIGHT, 100, gc);
         world.add(new Rectangle(2.0, 4.0, 1.0, 1.0, 0, false, Color.rgb(255, 0, 0)));
         world.add(new Rectangle(4.0, 2.0, 5.0, 1.0, 0, true, Color.rgb(0, 0, 255)));
-        world.add(new Rectangle(4.0, 0.5, 8.0, 1.0, 0, true, Color.rgb(0, 0, 255)));
+
+        // boundary
+        world.add(new Rectangle(4.0, 0.5, 6.0, 1, 0, true, Color.rgb(0, 0, 255)));
+        world.add(new Rectangle(0.5, 3, 1.0, 6, 0, true, Color.rgb(0, 0, 255)));
+        world.add(new Rectangle(7.5, 3, 1.0, 6, 0, true, Color.rgb(0, 0, 255)));
 
         // Mouse event handlers
         scene.setOnMouseDragged(this::updateMousePosition);
