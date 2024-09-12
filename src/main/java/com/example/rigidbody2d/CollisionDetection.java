@@ -107,6 +107,9 @@ public class CollisionDetection {
             // contact normal points from rect to circle
             return getContactPoints(rect, circle, Vector3.mul(-1, contactNormal));
         }
+        else if(r1 instanceof Circle circle1 && r2 instanceof Circle circle2){
+            return new ArrayList<>(List.of(Vector3.add(circle2.position, Vector3.mul(circle2.radius, contactNormal))));
+        }
 
         throw new NotImplementedError();
     }
@@ -199,6 +202,23 @@ public class CollisionDetection {
             }
 
             return result;
+        }
+        else if(r1 instanceof Circle circle1 && r2 instanceof Circle circle2){
+
+            double d = Vector3.sub(circle1.position, circle2.position).norm();
+
+            if(d < (circle1.radius + circle2.radius)){
+
+                double penetrationDepth = Math.abs(d - (circle1.radius + circle2.radius));
+
+                // points from second circle to first circle (correct)
+                Vector3 collisionNormal = Vector3.sub(circle1.position, circle2.position);
+                collisionNormal.normalize();
+
+                return new Pair<>(collisionNormal, penetrationDepth);
+            }
+
+            return new Pair<>(null, null);
         }
 
         return new Pair<>(null, null);
