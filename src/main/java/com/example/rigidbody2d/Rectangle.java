@@ -17,7 +17,7 @@ public class Rectangle extends RigidBody{
 
     public Rectangle(double centerX, double centerY, double width, double height, double angle, boolean isStatic, Color color) {
 
-        super(centerX, centerY, angle, 0.0, 0.0);
+        super(centerX, centerY, angle, 0.0, 0.0, isStatic);
 
         this.width = width;
         this.height = height;

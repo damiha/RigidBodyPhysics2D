@@ -4,6 +4,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
 public class World {
 
@@ -18,6 +19,17 @@ public class World {
     boolean drawVertices = true;
     boolean drawMousePosition = true;
 
+    DisplayMode displayMode = DisplayMode.WIREFRAME;
+    boolean drawNormals = false;
+    boolean drawContactPoints = true;
+
+    boolean isPhysicsActive = false;
+
+    // acceleration due to gravity
+    double g = -1;
+
+    ArrayList<Vector3> allContactPoints;
+
     public World(int canvasWidth, int canvasHeight, int pixelPerWorldUnit, GraphicsContext gc){
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
@@ -25,6 +37,7 @@ public class World {
         this.gc = gc;
 
         rigidBodies = new ArrayList<>();
+        allContactPoints = new ArrayList<>();
     }
 
     public void add(RigidBody rigidBody){
@@ -48,6 +61,20 @@ public class World {
                     }
                 }
             }
+        }
+
+        if(drawContactPoints){
+
+            gc.save();
+            gc.setFill(Color.rgb(245, 150, 65)); // orange
+
+            for(Vector3 contactPoint : allContactPoints){
+                Vector3 contactPointOnScreen = toScreenCoords(contactPoint);
+
+                gc.fillOval(contactPointOnScreen.x, contactPointOnScreen.y, 10, 10);
+            }
+
+            gc.restore();
         }
 
         if(drawMousePosition) {
@@ -76,8 +103,14 @@ public class World {
         return radians * (360.0 / (2 * Math.PI));
     }
 
-    public void update(double mouseX, double mouseY,  boolean mousePressed,
+    public void togglePhysics(){
+        isPhysicsActive = !isPhysicsActive;
+    }
+
+    public void update(double dt, double mouseX, double mouseY,  boolean mousePressed,
                        boolean RPressed, boolean EPressed, boolean TPressed, boolean ShiftPressed){
+
+        allContactPoints.clear();
 
         mousePosInWorldCoords = toWorldCoords(new Vector3(mouseX, mouseY, 0));
 
@@ -87,8 +120,7 @@ public class World {
             for(RigidBody rigidBody : rigidBodies){
                if(rigidBody instanceof Rectangle rectangle){
 
-                    if(CollisionDetection.isIntersecting(rectangle.getVertices(), mousePosInWorldCoords)){
-                        rectangle.suspended = true;
+                    if(CollisionDetection.isIntersecting(rectangle, mousePosInWorldCoords)){
 
                         Vector3 dx = lastMousePosInWorldCoords != null ?
                                 Vector3.sub(mousePosInWorldCoords, lastMousePosInWorldCoords) :
@@ -112,8 +144,64 @@ public class World {
             }
         }
 
-        for(RigidBody rigidBody : rigidBodies){
+        // add all the forces
+        if(isPhysicsActive) {
 
+            for (RigidBody rigidBody : rigidBodies) {
+                rigidBody.acceleration = new Vector3(0, -5, 0);
+            }
+
+            // integration
+            for (RigidBody rigidBody : rigidBodies) {
+
+                if(!rigidBody.isStatic){
+                    rigidBody.velocity = Vector3.add(rigidBody.velocity, Vector3.mul(dt, rigidBody.acceleration));
+                    rigidBody.position = Vector3.add(rigidBody.position, Vector3.mul(dt, rigidBody.velocity));
+                }
+            }
+
+            // collision detection and response
+            for (int i = 0; i < rigidBodies.size(); i++) {
+                for (int j = i + 1; j < rigidBodies.size(); j++) {
+
+                    RigidBody r1 = rigidBodies.get(i);
+                    RigidBody r2 = rigidBodies.get(j);
+
+                    Pair<Vector3, Double> result = CollisionDetection.isColliding(r1, r2);
+                    Vector3 contactNormal = result.key();
+                    Double penetrationDepth = result.value();
+
+                    if (contactNormal == null) {
+                        continue;
+                    }
+
+                    // separate the objects, then calculate the contact points
+                    double r1MovesBy = 0.0;
+                    double r2MovesBy = 0.0;
+
+                    if(!r1.isStatic && !r2.isStatic){
+                        double m1 = 1.0 / r1.inverseMass;
+                        double m2 = 1.0 / r2.inverseMass;
+                        double M = m1 + m2;
+
+                        r1MovesBy = penetrationDepth * (m2 / M);
+                        r2MovesBy = penetrationDepth * (m1 / M);
+                    }
+                    else if(!r1.isStatic){
+                        r1MovesBy = penetrationDepth;
+                    }
+                    else if(!r2.isStatic){
+                        r2MovesBy = penetrationDepth;
+                    }
+
+                    r1.position.add(Vector3.mul(r1MovesBy, contactNormal));
+                    r2.position.add(Vector3.mul(-r2MovesBy, contactNormal));
+
+                    // now calculate the contact points and do the dynamic collision response
+                    ArrayList<Vector3> contactPoints = CollisionDetection.getContactPoints(r1, r2, contactNormal);
+                    allContactPoints.addAll(contactPoints);
+                }
+            }
         }
 
         lastMousePosInWorldCoords = mousePosInWorldCoords;
@@ -132,9 +220,38 @@ public class World {
             // mathematical direction of rotation = counterclockwise
             // javafx is clockwise by default
             gc.rotate(-toDegrees(rectangle.angle));
-            gc.setFill(rectangle.color);
-            gc.fillRect(-rectangleWidth / 2, -rectangleHeight / 2, rectangleWidth, rectangleHeight);
+
+            if(displayMode == DisplayMode.SOLID) {
+                gc.setFill(rectangle.color);
+                gc.fillRect(-rectangleWidth / 2, -rectangleHeight / 2, rectangleWidth, rectangleHeight);
+            }
+            else if(displayMode == DisplayMode.WIREFRAME){
+                gc.setStroke(rectangle.color);
+                gc.strokeRect(-rectangleWidth / 2, -rectangleHeight / 2, rectangleWidth, rectangleHeight);
+            }
             gc.restore();
+
+            // draw contact normals
+            if(drawNormals){
+
+                ArrayList<Vector3> vertices = rectangle.getVertices();
+
+                ArrayList<Vector3> normals = CollisionDetection.getAxes(vertices, rectangle.position);
+
+                for(int i = 0; i < vertices.size(); i++){
+
+                    Vector3 vStart = vertices.get(i);
+                    Vector3 vEnd = vertices.get((i + 1) % vertices.size());
+
+                    Vector3 midPoint = Vector3.mul(0.5, Vector3.add(vStart, vEnd));
+                    Vector3 endPoint = Vector3.add(midPoint, normals.get(i));
+
+                    Vector3 midPointOnScreen = toScreenCoords(midPoint);
+                    Vector3 endPointOnScreen = toScreenCoords(endPoint);
+
+                    gc.strokeLine(midPointOnScreen.x, midPointOnScreen.y, endPointOnScreen.x, endPointOnScreen.y);
+                }
+            }
         }
     }
 }

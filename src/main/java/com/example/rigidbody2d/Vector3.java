@@ -9,6 +9,28 @@ public class Vector3 {
         this.z = z;
     }
 
+    public Vector3(){
+        x = y = z = 0;
+    }
+
+    public void normalize(){
+        double norm = norm();
+
+        x /= norm;
+        y /= norm;
+        z /= norm;
+    }
+
+    public double norm(){
+        return Math.sqrt(x * x + y * y + z * z);
+    }
+
+    public void add(Vector3 v){
+        this.x += v.x;
+        this.y += v.y;
+        this.z += v.z;
+    }
+
     public static Vector3 add(Vector3 v, Vector3 w){
         return new Vector3(v.x + w.x, v.y + w.y, v.z + w.z);
     }

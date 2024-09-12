@@ -24,10 +24,17 @@ public class MainApplication extends Application {
 
     private World world;
 
-    private boolean RPressed, EPressed, TPressed, ShiftPressed;
+    private boolean RPressed, EPressed, TPressed, ShiftPressed, SpacePressed;
+
+    private double deltaTime;
+
+    long lastNanoSeconds;
 
     @Override
     public void start(Stage stage) {
+
+        lastNanoSeconds = System.nanoTime();
+
         canvas = new Canvas(WIDTH, HEIGHT);
         gc = canvas.getGraphicsContext2D();
 
@@ -35,7 +42,8 @@ public class MainApplication extends Application {
         Scene scene = new Scene(root, WIDTH, HEIGHT);
 
         world = new World(WIDTH, HEIGHT, 100, gc);
-        world.add(new Rectangle(2.0, 2.0, 1.0, 1.0, 1, false, Color.rgb(255, 0, 0)));
+        world.add(new Rectangle(2.0, 4.0, 1.0, 1.0, 0, false, Color.rgb(255, 0, 0)));
+        world.add(new Rectangle(4.0, 2.0, 5.0, 1.0, 0, true, Color.rgb(0, 0, 255)));
 
         // Mouse event handlers
         scene.setOnMouseDragged(this::updateMousePosition);
@@ -57,6 +65,9 @@ public class MainApplication extends Application {
                 case SHIFT:
                     ShiftPressed = true;
                     break;
+                case SPACE:
+                    SpacePressed = true;
+                    break;
             }
         });
 
@@ -74,6 +85,9 @@ public class MainApplication extends Application {
                 case SHIFT:
                     ShiftPressed = false;
                     break;
+                case SPACE:
+                    world.togglePhysics();
+                    break;
             }
         });
 
@@ -85,8 +99,17 @@ public class MainApplication extends Application {
         new AnimationTimer() {
             @Override
             public void handle(long now) {
+
                 update();
                 render();
+
+                long thisNanoSeconds = System.nanoTime();
+
+                long nanoSecondsPassed = thisNanoSeconds - lastNanoSeconds;
+
+                deltaTime = nanoSecondsPassed / 1000_000_000.0;
+
+                lastNanoSeconds = thisNanoSeconds;
             }
         }.start();
     }
@@ -105,7 +128,9 @@ public class MainApplication extends Application {
     }
 
     private void update() {
-       world.update(mouseX, mouseY, mousePressed, RPressed, EPressed, TPressed, ShiftPressed);
+       world.update(deltaTime,
+               mouseX, mouseY, mousePressed,
+               RPressed, EPressed, TPressed, ShiftPressed);
     }
 
     private void render() {
