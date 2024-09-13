@@ -11,7 +11,7 @@ It includes:
 
 The engine is far from complete, but I think it's fine for 1.5 days of coding :)
 
-## Demo
+## Demo (takes a few seconds to load by GitHub)
 
 ![Physics Engine Demo](assets/demo.gif)
 
