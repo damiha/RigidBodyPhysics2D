@@ -27,4 +27,9 @@ public class Circle extends RigidBody{
         this.radius = newRadius;
         updatePhysicalProperties();
     }
+
+    @Override
+    public AABB getAABB() {
+        return new AABB(position.x - radius, position.y - radius, position.x + radius, position.y + radius);
+    }
 }

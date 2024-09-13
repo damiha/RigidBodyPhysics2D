@@ -4,6 +4,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,12 @@ public class World {
     // acceleration due to gravity
     double g = -1;
 
+    double lastDeltaTime = 0.0;
+
     ArrayList<Vector3> allContactPoints;
+
+    double runningAverageFPS;
+    int samplesForAverage = 1000;
 
     public World(int canvasWidth, int canvasHeight, int pixelPerWorldUnit, GraphicsContext gc){
         this.canvasWidth = canvasWidth;
@@ -113,8 +119,40 @@ public class World {
                 "E (+ Shift) - Increase/Decrease Width",
                 "T (+ Shift) - Increase/Decrease Height",
                 "Space - Start/Stop the Simulation",
-                "Wireframe [1] / Solid [2] / Textured [3]",
-                "New Cube [X] / New Circle [C] / Static vs. Dynamic [S]"));
+                "Wireframe [1] / Solid [2]", // TODO: add textured mode
+                "New Cube [X] / New Circle [C]")); // TODO: add static dynamic stuff
+
+        double thisFPS = lastDeltaTime == 0.0 ? 0.0 : 1.0 / lastDeltaTime;
+        runningAverageFPS = ((samplesForAverage - 1) * 1.0 / samplesForAverage) * runningAverageFPS + (1.0 / samplesForAverage) * thisFPS;
+
+        drawFPS(runningAverageFPS);
+    }
+
+    public void drawFPS(double fps) {
+
+        gc.save();
+
+        // Set the font
+        gc.setFont(Font.font("Arial", 14));
+
+        // Set the text color to black
+        gc.setFill(Color.BLACK);
+
+        // Format the FPS string
+        String fpsText = String.format("FPS: %.2f", fps);
+
+        // Get the width of the canvas
+        double canvasWidth = gc.getCanvas().getWidth();
+
+        // Set text alignment to right
+        gc.setTextAlign(TextAlignment.RIGHT);
+
+        // Draw the text
+        double x = canvasWidth - 10; // 10 pixels from the right edge
+        double y = 20; // 20 pixels from the top
+        gc.fillText(fpsText, x, y);
+
+        gc.restore();
     }
 
     private Vector3 toScreenCoords(Vector3 position){
@@ -153,6 +191,8 @@ public class World {
                        boolean RPressed, boolean EPressed, boolean TPressed, boolean ShiftPressed){
 
         allContactPoints.clear();
+
+        lastDeltaTime = dt;
 
         mousePosInWorldCoords = toWorldCoords(new Vector3(mouseX, mouseY, 0));
 
@@ -234,6 +274,11 @@ public class World {
                     RigidBody r2 = rigidBodies.get(j);
 
                     if(r1.isStatic && r2.isStatic){
+                        continue;
+                    }
+
+                    // AABB (axis aligned bounding boxes) is an over approximation so intersection is a necessary condition
+                    if(!r1.getAABB().isIntersecting(r2.getAABB())){
                         continue;
                     }
 

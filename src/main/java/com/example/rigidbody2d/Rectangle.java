@@ -1,8 +1,5 @@
 package com.example.rigidbody2d;
 
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-
 import java.util.ArrayList;
 
 public class Rectangle extends RigidBody{
@@ -23,6 +20,25 @@ public class Rectangle extends RigidBody{
         this.isStatic = isStatic;
 
         updatePhysicalProperties();
+    }
+
+    @Override
+    public AABB getAABB() {
+        ArrayList<Vector3> vertices = getVertices();
+
+        double minX = 10E4;
+        double minY = 10E4;
+        double maxX = -10E4;
+        double maxY = -10E4;
+
+        for(Vector3 vertex : vertices){
+            minX = Math.min(vertex.x, minX);
+            maxX = Math.max(vertex.x, maxX);
+
+            minY = Math.min(vertex.y, minY);
+            maxY = Math.max(vertex.y, maxY);
+        }
+        return new AABB(minX, minY, maxX, maxY);
     }
 
     public void setWidth(double newWidth){

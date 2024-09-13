@@ -33,4 +33,6 @@ public abstract class RigidBody {
     public Color getColor(){
         return isStatic ? Color.rgb(167, 199, 231) : Color.rgb(255, 179, 186);
     }
+
+    public abstract AABB getAABB();
 }
